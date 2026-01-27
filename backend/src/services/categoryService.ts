@@ -3,7 +3,7 @@ import { FileHelper } from '../lib/helper'
 
 export class CategoryService {
   static async getAll() {
-    const categories = await prisma.category.findMany({
+    return prisma.category.findMany({
       include: {
         _count: {
           select: { products: true },
@@ -11,8 +11,6 @@ export class CategoryService {
       },
       orderBy: { id: 'desc' },
     })
-
-    return categories
   }
 
   static async getById(id: number) {
@@ -40,18 +38,19 @@ export class CategoryService {
 
   static async create(name: string, imageUrl?: string) {
     const existingCategory = await prisma.category.findFirst({
-      where: { name: { equals: name, mode: 'insensitive' } },
+      where: { name },
     })
 
     if (existingCategory) {
       throw new Error('Kategori dengan nama ini sudah ada')
     }
 
-    const category = await prisma.category.create({
-      data: { name, imageUrl },
+    return prisma.category.create({
+      data: {
+        name,
+        imageUrl,
+      },
     })
-
-    return category
   }
 
   static async update(id: number, name: string, imageUrl?: string) {
@@ -65,7 +64,7 @@ export class CategoryService {
 
     const existingCategory = await prisma.category.findFirst({
       where: {
-        name: { equals: name, mode: 'insensitive' },
+        name,
         NOT: { id },
       },
     })
@@ -78,12 +77,13 @@ export class CategoryService {
       FileHelper.deleteFile(category.imageUrl)
     }
 
-    const updatedCategory = await prisma.category.update({
+    return prisma.category.update({
       where: { id },
-      data: { name, imageUrl },
+      data: {
+        name,
+        imageUrl,
+      },
     })
-
-    return updatedCategory
   }
 
   static async delete(id: number) {

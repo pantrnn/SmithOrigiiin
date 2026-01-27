@@ -5,7 +5,7 @@ const prisma_1 = require("../lib/prisma");
 const helper_1 = require("../lib/helper");
 class CategoryService {
     static async getAll() {
-        const categories = await prisma_1.prisma.category.findMany({
+        return prisma_1.prisma.category.findMany({
             include: {
                 _count: {
                     select: { products: true },
@@ -13,7 +13,6 @@ class CategoryService {
             },
             orderBy: { id: 'desc' },
         });
-        return categories;
     }
     static async getById(id) {
         const category = await prisma_1.prisma.category.findUnique({
@@ -37,15 +36,17 @@ class CategoryService {
     }
     static async create(name, imageUrl) {
         const existingCategory = await prisma_1.prisma.category.findFirst({
-            where: { name: { equals: name, mode: 'insensitive' } },
+            where: { name },
         });
         if (existingCategory) {
             throw new Error('Kategori dengan nama ini sudah ada');
         }
-        const category = await prisma_1.prisma.category.create({
-            data: { name, imageUrl },
+        return prisma_1.prisma.category.create({
+            data: {
+                name,
+                imageUrl,
+            },
         });
-        return category;
     }
     static async update(id, name, imageUrl) {
         const category = await prisma_1.prisma.category.findUnique({
@@ -56,7 +57,7 @@ class CategoryService {
         }
         const existingCategory = await prisma_1.prisma.category.findFirst({
             where: {
-                name: { equals: name, mode: 'insensitive' },
+                name,
                 NOT: { id },
             },
         });
@@ -66,11 +67,13 @@ class CategoryService {
         if (category.imageUrl && imageUrl && category.imageUrl !== imageUrl) {
             helper_1.FileHelper.deleteFile(category.imageUrl);
         }
-        const updatedCategory = await prisma_1.prisma.category.update({
+        return prisma_1.prisma.category.update({
             where: { id },
-            data: { name, imageUrl },
+            data: {
+                name,
+                imageUrl,
+            },
         });
-        return updatedCategory;
     }
     static async delete(id) {
         const category = await prisma_1.prisma.category.findUnique({

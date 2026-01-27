@@ -1,14 +1,16 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Prisma schema for MySQL
+// Docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+
 
 model User {
   id           Int          @id @default(autoincrement())
@@ -16,7 +18,7 @@ model User {
   email        String       @unique
   password     String
   isAdmin      Boolean      @default(false)
-  refreshToken String?
+  refreshToken String?      @db.Text
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   favorites    Favorite[]
@@ -26,6 +28,7 @@ model User {
 
   @@map("users")
 }
+
 
 model Category {
   id        Int       @id @default(autoincrement())
@@ -127,7 +130,6 @@ model ForumReply {
 
   forumId Int
   userId  Int
-
   parentId Int?
 
   forum Forum @relation(fields: [forumId], references: [id], onDelete: Cascade)
