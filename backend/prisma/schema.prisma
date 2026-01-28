@@ -10,8 +10,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-
 model User {
   id           Int          @id @default(autoincrement())
   username     String       @unique
@@ -28,7 +26,6 @@ model User {
 
   @@map("users")
 }
-
 
 model Category {
   id        Int       @id @default(autoincrement())
@@ -128,8 +125,8 @@ model ForumReply {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  forumId Int
-  userId  Int
+  forumId  Int
+  userId   Int
   parentId Int?
 
   forum Forum @relation(fields: [forumId], references: [id], onDelete: Cascade)
@@ -139,4 +136,18 @@ model ForumReply {
   replies ForumReply[] @relation("ReplyToReply")
 
   @@map("forum_replies")
+}
+
+// Rate Limiting
+model RateLimit {
+  id        Int      @id @default(autoincrement())
+  ip        String   @db.VarChar(45)
+  action    String   @db.VarChar(50)
+  attempts  Int      @default(1)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@unique([ip, action])
+  @@index([ip, action, expiresAt])
+  @@map("rate_limits")
 }

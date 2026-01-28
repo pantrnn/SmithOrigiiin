@@ -12,11 +12,13 @@ import variantRouter from './routes/variant';
 import favoriteRouter from './routes/favorite';
 import categoryRoutes from './routes/category';
 
+import { startRateLimitCleanupJob } from './jobs/cleanupRateLimits';
+
 const app = express();
 
 app.use(cors({
   origin: 'http://localhost:3000',
-  credentials: true,          
+  credentials: true,
 }));
 
 app.use(express.json());
@@ -36,6 +38,9 @@ app.use('/uploads', express.static('public/uploads'));
 app.get('/api/health', (req, res) => {
   res.status(200).json({ message: 'Server is running' });
 });
+
+// 🔥 START RATE LIMIT CLEANUP JOB
+startRateLimitCleanupJob();
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {

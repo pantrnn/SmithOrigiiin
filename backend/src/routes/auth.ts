@@ -1,14 +1,31 @@
 import { Router, Request, Response } from 'express';
 import { AuthService } from '../services/authService';
 import { authMiddleware } from '../middleware/auth';
-import { verifyTurnstile } from '../middleware/turnstile'; // Import middleware baru
+import { verifyTurnstile } from '../middleware/turnstile';
+import { rateLimiter } from '../middleware/rateLimiter'; // Import rate limiter
 import { prisma } from '../lib/prisma';
 import bcrypt from 'bcrypt';
 
 const router = Router();
 
-// Register dengan Turnstile protection
-router.post('/register', verifyTurnstile, async (req: Request, res: Response) => {
+// Rate limiting untuk register: 2x per 24 jam per IP
+const registerRateLimit = rateLimiter({
+  action: 'register',
+  maxAttempts: 2,
+  windowMs: 24 * 60 * 60 * 1000, // 24 jam
+  message: 'Anda telah mencapai batas registrasi Silakan coba lagi besok.',
+});
+
+// Rate limiting untuk login: 10x per jam per IP (opsional)
+const loginRateLimit = rateLimiter({
+  action: 'login',
+  maxAttempts: 10,
+  windowMs: 60 * 60 * 1000, // 1 jam
+  message: 'Terlalu banyak percobaan login. Silakan coba lagi dalam beberapa menit.',
+});
+
+// Register dengan Rate Limiting + Turnstile
+router.post('/register', registerRateLimit, verifyTurnstile, async (req: Request, res: Response) => {
   try {
     const { username, email, password } = req.body;
 
@@ -26,7 +43,7 @@ router.post('/register', verifyTurnstile, async (req: Request, res: Response) =>
   }
 });
 
-// Register admin tanpa Turnstile (internal use)
+// Register admin tanpa rate limiting (internal use)
 router.post('/register-admin', async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
@@ -45,8 +62,8 @@ router.post('/register-admin', async (req: Request, res: Response) => {
   }
 });
 
-// Login dengan Turnstile protection
-router.post('/login', verifyTurnstile, async (req: Request, res: Response) => {
+// Login dengan Rate Limiting + Turnstile
+router.post('/login', loginRateLimit, verifyTurnstile, async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
 
@@ -74,7 +91,6 @@ router.post('/login', verifyTurnstile, async (req: Request, res: Response) => {
   }
 });
 
-// Refresh token (tidak perlu Turnstile)
 router.post('/refresh', async (req: Request, res: Response) => {
   try {
     const refreshToken = req.cookies.refreshToken;
@@ -94,7 +110,6 @@ router.post('/refresh', async (req: Request, res: Response) => {
   }
 });
 
-// Logout (tidak perlu Turnstile, sudah authenticated)
 router.post('/logout', authMiddleware, async (req: Request, res: Response) => {
   try {
     if (!req.user) {
@@ -109,7 +124,6 @@ router.post('/logout', authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-// Change password (tidak perlu Turnstile, sudah authenticated)
 router.post('/change-password', authMiddleware, async (req: Request, res: Response) => {
   try {
     if (!req.user) {
@@ -133,7 +147,6 @@ router.post('/change-password', authMiddleware, async (req: Request, res: Respon
   }
 });
 
-// Create admin (internal, tanpa Turnstile)
 router.post('/create-admin', async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
