@@ -2,8 +2,9 @@
 import Link from "next/link";
 import api from "../../../lib/axios";
 import { motion } from "framer-motion";
+import { AxiosError } from "axios";
 import { ProductCard } from "./productcard";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, PackageX } from "lucide-react";
 import { Product } from "../../../lib/product";
 import React, { useState, useEffect } from "react";
 
@@ -60,6 +61,7 @@ export default function FeaturedProduct() {
   const [productsByCategory, setProductsByCategory] =
     useState<ProductsByCategory>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const [activeTab, setActiveTab] = useState<
     "all" | "best-seller" | "new-product"
@@ -83,6 +85,8 @@ export default function FeaturedProduct() {
   }, []);
 
   const fetchData = async (): Promise<void> => {
+    setLoading(true);
+    setError("");
     try {
       const [productsRes, categoriesRes] = await Promise.all([
         api.get<ApiResponse<Product[]>>("/products?limit=100"),
@@ -104,7 +108,9 @@ export default function FeaturedProduct() {
       }
 
       setProductsByCategory(grouped);
-    } catch (err) {
+    } catch (e) {
+      const err = e as AxiosError<{ message?: string }>;
+      setError(err.response?.data?.message || "Gagal memuat produk");
       console.error("Failed to fetch data:", err);
     } finally {
       setLoading(false);
@@ -136,99 +142,113 @@ export default function FeaturedProduct() {
         Featured Product
       </h1>
 
-      <div className="space-y-6">
-        <div className="border-b border-gray-200 overflow-x-auto scrollbar-hide px-4 sm:px-0">
-          <div className="flex gap-4 sm:gap-6 min-w-max sm:min-w-0">
-            {tabItems.map((tab) => (
-              <motion.button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`pb-2 sm:pb-3 cursor-pointer relative text-sm sm:text-base font-medium transition-colors whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? "text-red-800"
-                    : "text-gray-500 hover:text-red-800"
-                }`}
-                whileHover={{ scale: 1.05 }}
-              >
-                {tab.label}
-
-                {activeTab === tab.id && (
-                  <motion.div
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-800"
-                    layoutId="activeTab"
-                    transition={{
-                      type: "spring",
-                      stiffness: 380,
-                      damping: 30,
-                    }}
-                  />
-                )}
-              </motion.button>
-            ))}
-          </div>
+      {error ? (
+        <div className="flex flex-col items-center gap-3 py-8">
+          <p className="text-red-500 text-base md:text-lg">{error}</p>
         </div>
+      ) : (
+        <>
+          <div className="space-y-6">
+            <div className="border-b border-gray-200 overflow-x-auto scrollbar-hide px-4 sm:px-0">
+              <div className="flex gap-4 sm:gap-6 min-w-max sm:min-w-0">
+                {tabItems.map((tab) => (
+                  <motion.button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`pb-2 sm:pb-3 cursor-pointer relative text-sm sm:text-base font-medium transition-colors whitespace-nowrap ${
+                      activeTab === tab.id
+                        ? "text-red-800"
+                        : "text-gray-500 hover:text-red-800"
+                    }`}
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    {tab.label}
 
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
-          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-5 px-4 sm:px-0"
-        >
-          {loading
-            ? [...Array(12)].map((_, i) => <ProductSkeleton key={i} />)
-            : filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-        </motion.div>
-      </div>
-
-      <div className="space-y-8 sm:space-y-10 lg:space-y-12">
-        {categories.map((category) => {
-          const products = productsByCategory[category.id] || [];
-          if (products.length === 0) return null;
-
-          const showAll = products.length > MAX_PRODUCTS;
-          const visibleProducts = products.slice(0, MAX_PRODUCTS);
-
-          return (
-            <div key={category.id} className="space-y-4 sm:space-y-6">
-              <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 px-4 sm:px-0">
-                {category.name}
-              </h2>
-
-              {loading ? (
-                <div className="px-4 sm:px-0">
-                  <SkeletonGrid />
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-5 px-4 sm:px-0">
-                  {visibleProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-                </div>
-              )}
-
-              {showAll && (
-                <div className="mt-6 sm:mt-8 text-center px-4 sm:px-0">
-                  <Link href={`/user/store/category/${category.id}`}>
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-red-800 text-white rounded-full hover:bg-red-900 transition-colors font-semibold text-sm sm:text-base flex items-center justify-center gap-2 mx-auto"
-                    >
-                      <span>
-                        View All {products.length} {category.name}
-                      </span>
-                      <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </motion.button>
-                  </Link>
-                </div>
-              )}
+                    {activeTab === tab.id && (
+                      <motion.div
+                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-800"
+                        layoutId="activeTab"
+                        transition={{
+                          type: "spring",
+                          stiffness: 380,
+                          damping: 30,
+                        }}
+                      />
+                    )}
+                  </motion.button>
+                ))}
+              </div>
             </div>
-          );
-        })}
-      </div>
+
+            {loading ? (
+              <div className="px-4 sm:px-0">
+                <SkeletonGrid />
+              </div>
+            ) : filteredProducts.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 mt-20">
+                <PackageX className="w-10 h-10 text-gray-300" />
+                <p className="text-gray-500 text-base md:text-lg">
+                  Tidak ada produk tersedia
+                </p>
+              </div>
+            ) : (
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-5 px-4 sm:px-0"
+              >
+                {filteredProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </motion.div>
+            )}
+          </div>
+
+          <div className="space-y-8 sm:space-y-10 lg:space-y-12">
+            {!loading &&
+              categories.map((category) => {
+                const products = productsByCategory[category.id] || [];
+                if (products.length === 0) return null;
+
+                const showAll = products.length > MAX_PRODUCTS;
+                const visibleProducts = products.slice(0, MAX_PRODUCTS);
+
+                return (
+                  <div key={category.id} className="space-y-4 sm:space-y-6">
+                    <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 px-4 sm:px-0">
+                      {category.name}
+                    </h2>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-5 px-4 sm:px-0">
+                      {visibleProducts.map((product) => (
+                        <ProductCard key={product.id} product={product} />
+                      ))}
+                    </div>
+
+                    {showAll && (
+                      <div className="mt-6 sm:mt-8 text-center px-4 sm:px-0">
+                        <Link href={`/user/store/category/${category.id}`}>
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-red-800 text-white rounded-full hover:bg-red-900 transition-colors font-semibold text-sm sm:text-base flex items-center justify-center gap-2 mx-auto"
+                          >
+                            <span>
+                              View All {products.length} {category.name}
+                            </span>
+                            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                          </motion.button>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+        </>
+      )}
     </div>
   );
 }

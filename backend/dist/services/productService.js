@@ -31,7 +31,10 @@ class ProductService {
             prisma_1.prisma.product.count({ where }),
         ]);
         return {
-            products: products.map(p => ({ ...p, createdAt: p.createdAt })),
+            products: products.map((p) => ({
+                ...p,
+                createdAt: p.createdAt,
+            })),
             pagination: {
                 page,
                 limit,
@@ -52,7 +55,10 @@ class ProductService {
         if (!product) {
             throw new Error('Produk tidak ditemukan');
         }
-        return { ...product, createdAt: product.createdAt };
+        return {
+            ...product,
+            createdAt: product.createdAt,
+        };
     }
     static async create(data) {
         if (data.categoryId) {
@@ -69,7 +75,10 @@ class ProductService {
                 variants: true,
             },
         });
-        return { ...product, createdAt: product.createdAt };
+        return {
+            ...product,
+            createdAt: product.createdAt,
+        };
     }
     static async update(id, data) {
         const product = await prisma_1.prisma.product.findUnique({ where: { id } });
@@ -93,7 +102,10 @@ class ProductService {
                 variants: true,
             },
         });
-        return { ...updatedProduct, createdAt: updatedProduct.createdAt };
+        return {
+            ...updatedProduct,
+            createdAt: updatedProduct.createdAt,
+        };
     }
     static async delete(id) {
         const product = await prisma_1.prisma.product.findUnique({
@@ -107,7 +119,7 @@ class ProductService {
             helper_1.FileHelper.deleteFile(product.imageUrl);
         }
         const variantImages = product.variants
-            .map(v => v.imageUrl)
+            .map((v) => v.imageUrl)
             .filter((url) => Boolean(url));
         helper_1.FileHelper.deleteFiles(variantImages);
         await prisma_1.prisma.product.delete({ where: { id } });

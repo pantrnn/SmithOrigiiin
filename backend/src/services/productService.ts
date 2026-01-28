@@ -1,6 +1,10 @@
 import { prisma } from '../lib/prisma'
 import { FileHelper } from '../lib/helper'
 
+type ProductWithRelations = Awaited<
+  ReturnType<typeof prisma.product.findMany>
+>[number]
+
 export class ProductService {
   static async getAll(
     page = 1,
@@ -38,7 +42,10 @@ export class ProductService {
     ])
 
     return {
-      products: products.map(p => ({ ...p, createdAt: p.createdAt })),
+      products: products.map((p: ProductWithRelations) => ({
+        ...p,
+        createdAt: p.createdAt,
+      })),
       pagination: {
         page,
         limit,
@@ -62,7 +69,10 @@ export class ProductService {
       throw new Error('Produk tidak ditemukan')
     }
 
-    return { ...product, createdAt: product.createdAt }
+    return {
+      ...product,
+      createdAt: product.createdAt,
+    }
   }
 
   static async create(data: {
@@ -91,7 +101,10 @@ export class ProductService {
       },
     })
 
-    return { ...product, createdAt: product.createdAt }
+    return {
+      ...product,
+      createdAt: product.createdAt,
+    }
   }
 
   static async update(
@@ -131,7 +144,10 @@ export class ProductService {
       },
     })
 
-    return { ...updatedProduct, createdAt: updatedProduct.createdAt }
+    return {
+      ...updatedProduct,
+      createdAt: updatedProduct.createdAt,
+    }
   }
 
   static async delete(id: number) {
@@ -149,8 +165,8 @@ export class ProductService {
     }
 
     const variantImages = product.variants
-      .map(v => v.imageUrl)
-      .filter((url): url is string => Boolean(url))
+      .map((v: { imageUrl?: string | null }) => v.imageUrl)
+      .filter((url: string | null | undefined): url is string => Boolean(url))
 
     FileHelper.deleteFiles(variantImages)
 

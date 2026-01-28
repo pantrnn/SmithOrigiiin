@@ -1,12 +1,14 @@
 import { Router, Request, Response } from 'express';
 import { AuthService } from '../services/authService';
 import { authMiddleware } from '../middleware/auth';
+import { verifyTurnstile } from '../middleware/turnstile'; // Import middleware baru
 import { prisma } from '../lib/prisma';
 import bcrypt from 'bcrypt';
 
 const router = Router();
 
-router.post('/register', async (req: Request, res: Response) => {
+// Register dengan Turnstile protection
+router.post('/register', verifyTurnstile, async (req: Request, res: Response) => {
   try {
     const { username, email, password } = req.body;
 
@@ -24,6 +26,7 @@ router.post('/register', async (req: Request, res: Response) => {
   }
 });
 
+// Register admin tanpa Turnstile (internal use)
 router.post('/register-admin', async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
@@ -42,7 +45,8 @@ router.post('/register-admin', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/login', async (req: Request, res: Response) => {
+// Login dengan Turnstile protection
+router.post('/login', verifyTurnstile, async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
 
@@ -70,6 +74,7 @@ router.post('/login', async (req: Request, res: Response) => {
   }
 });
 
+// Refresh token (tidak perlu Turnstile)
 router.post('/refresh', async (req: Request, res: Response) => {
   try {
     const refreshToken = req.cookies.refreshToken;
@@ -89,6 +94,7 @@ router.post('/refresh', async (req: Request, res: Response) => {
   }
 });
 
+// Logout (tidak perlu Turnstile, sudah authenticated)
 router.post('/logout', authMiddleware, async (req: Request, res: Response) => {
   try {
     if (!req.user) {
@@ -103,6 +109,7 @@ router.post('/logout', authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
+// Change password (tidak perlu Turnstile, sudah authenticated)
 router.post('/change-password', authMiddleware, async (req: Request, res: Response) => {
   try {
     if (!req.user) {
@@ -126,6 +133,7 @@ router.post('/change-password', authMiddleware, async (req: Request, res: Respon
   }
 });
 
+// Create admin (internal, tanpa Turnstile)
 router.post('/create-admin', async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;

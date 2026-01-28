@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { saveAuth } from '../../../lib/auth';
 import { UserRound, Lock, Mail } from 'lucide-react';
 import { useAuth } from '@/app/components/ui/authcontext';
+import { Turnstile } from '@marsidev/react-turnstile';
 
 
 interface User {
@@ -20,6 +21,10 @@ export default function AuthPage() {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
 
+    // Turnstile states
+    const [turnstileToken, setTurnstileToken] = useState('');
+    const [turnstileError, setTurnstileError] = useState('');
+
     const [signInUsername, setSignInUsername] = useState('');
     const [signInPassword, setSignInPassword] = useState('');
 
@@ -33,11 +38,19 @@ export default function AuthPage() {
     const handleSignIn = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        
+        // Validasi Turnstile
+        if (!turnstileToken) {
+            setError('Please complete the security verification');
+            return;
+        }
+
         setLoading(true);
         try {
             const response = await api.post('/auth/login', {
                 username: signInUsername,
                 password: signInPassword,
+                turnstileToken,
             });
             const accessToken = response.data.data.accessToken
 
@@ -59,6 +72,13 @@ export default function AuthPage() {
     const handleSignUp = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+
+        // Validasi Turnstile
+        if (!turnstileToken) {
+            setError('Please complete the security verification');
+            return;
+        }
+
         setLoading(true);
         if (signUpPassword.length < 6) {
             setError('Password minimal 6 karakter');
@@ -70,6 +90,7 @@ export default function AuthPage() {
                 username: signUpUsername,
                 email: signUpEmail,
                 password: signUpPassword,
+                turnstileToken,
             });
             const accessToken = response?.data?.data?.accessToken;
             if (typeof accessToken !== 'string') throw new Error('Token tidak valid');
@@ -82,6 +103,14 @@ export default function AuthPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    // Handle tab change - reset turnstile
+    const handleTabChange = (tab: 'signin' | 'signup') => {
+        setActiveTab(tab);
+        setTurnstileToken('');
+        setError('');
+        setTurnstileError('');
     };
 
     return (
@@ -102,6 +131,12 @@ export default function AuthPage() {
                     {error && (
                         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg text-sm">
                             {error}
+                        </div>
+                    )}
+
+                    {turnstileError && (
+                        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-lg text-sm">
+                            {turnstileError}
                         </div>
                     )}
 
@@ -137,9 +172,30 @@ export default function AuthPage() {
                                     disabled={loading}
                                 />
                             </div>
+
+                            {/* Cloudflare Turnstile */}
+                            <div className="flex justify-center py-2">
+                                <Turnstile
+                                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA"}
+                                    onSuccess={(token) => {
+                                        setTurnstileToken(token);
+                                        setTurnstileError('');
+                                        setError('');
+                                    }}
+                                    onError={() => {
+                                        setTurnstileToken('');
+                                        setTurnstileError('Verification failed. Please try again.');
+                                    }}
+                                    onExpire={() => {
+                                        setTurnstileToken('');
+                                        setTurnstileError('Verification expired. Please verify again.');
+                                    }}
+                                />
+                            </div>
+
                             <button
                                 type="submit"
-                                disabled={loading}
+                                disabled={loading || !turnstileToken}
                                 className="bg-red-800 text-white text-xl font-semibold w-full py-4 rounded-full cursor-pointer hover:bg-red-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {loading ? 'Loading...' : 'Login'}
@@ -195,9 +251,30 @@ export default function AuthPage() {
                                     minLength={6}
                                 />
                             </div>
+
+                            {/* Cloudflare Turnstile */}
+                            <div className="flex justify-center py-2">
+                                <Turnstile
+                                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA"}
+                                    onSuccess={(token) => {
+                                        setTurnstileToken(token);
+                                        setTurnstileError('');
+                                        setError('');
+                                    }}
+                                    onError={() => {
+                                        setTurnstileToken('');
+                                        setTurnstileError('Verification failed. Please try again.');
+                                    }}
+                                    onExpire={() => {
+                                        setTurnstileToken('');
+                                        setTurnstileError('Verification expired. Please verify again.');
+                                    }}
+                                />
+                            </div>
+
                             <button
                                 type="submit"
-                                disabled={loading}
+                                disabled={loading || !turnstileToken}
                                 className="bg-red-800 text-white text-xl font-medium w-full py-4 rounded-full cursor-pointer hover:bg-red-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {loading ? 'Creating...' : 'Create'}
@@ -208,7 +285,7 @@ export default function AuthPage() {
                     <p className="text-[12px] text-center">
                         {activeTab === 'signin' ? "Don't have an account? " : "You already have an account? "}
                         <button
-                            onClick={() => setActiveTab(activeTab === 'signin' ? 'signup' : 'signin')}
+                            onClick={() => handleTabChange(activeTab === 'signin' ? 'signup' : 'signin')}
                             className="bg-transparent border-none cursor-pointer text-red-800 font-semibold hover:underline p-0"
                         >
                             {activeTab === 'signin' ? 'SignUp' : 'Sign In'}

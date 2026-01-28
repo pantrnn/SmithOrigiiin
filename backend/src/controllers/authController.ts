@@ -12,6 +12,7 @@ export class AuthController {
         });
       }
 
+      // Turnstile sudah diverifikasi di middleware
       const result = await AuthService.register(username, email, password);
 
       res.status(201).json({
@@ -60,6 +61,7 @@ export class AuthController {
         });
       }
 
+      // Turnstile sudah diverifikasi di middleware
       const result = await AuthService.login(username, password);
 
       res.status(200).json({

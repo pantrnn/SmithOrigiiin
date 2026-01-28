@@ -5,6 +5,7 @@ import 'swiper/css/scrollbar'
 import 'swiper/css/free-mode'
 import Image from 'next/image'
 import { AxiosError } from 'axios'
+import { FileX } from "lucide-react"
 import api from '../../../lib/axios'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Scrollbar, FreeMode } from 'swiper/modules'
@@ -69,10 +70,32 @@ export function ButtonCategory() {
     return Math.max(30, Math.min(100, baseSize - reduction))
   }
 
-  if (loading || error || categories.length === 0) {
+  if (loading) {
     return (
-      <div className="w-full flex flex-col gap-10">
-        <h1 className="text-center text-2xl font-bold">Category</h1>
+      <div className="w-full flex flex-col gap-6 md:gap-10">
+        <h1 className="text-center text-xl md:text-2xl font-bold px-4">Category</h1>
+        <p className="text-center text-gray-500">Memuat kategori...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="w-full flex flex-col gap-6 md:gap-10">
+        <h1 className="text-center text-xl md:text-2xl font-bold px-4">Category</h1>
+        <p className="text-center text-red-500">{error}</p>
+      </div>
+    )
+  }
+
+  if (categories.length === 0) {
+    return (
+      <div className="w-full flex flex-col gap-3 md:gap-5">
+        <h1 className="text-center text-xl md:text-2xl font-bold px-4">Category</h1>
+        <div className="flex flex-col items-center gap-3 py-8">
+          <FileX className='w-10 h-10 text-gray-300'/>
+          <p className="text-gray-500 text-base md:text-lg">Tidak ada kategori tersedia</p>
+        </div>
       </div>
     )
   }
@@ -106,7 +129,7 @@ export function ButtonCategory() {
               className="category-swiper pb-9!"
             >
               {categories.map((cat) => (
-                <SwiperSlide key={cat.id} className="w-[140px]! md:w-[180px]!">
+                <SwiperSlide key={cat.id} className="w-35! md:w-45!">
                   <Link
                     href={`/user/category/${cat.id}`}
                     className="flex flex-col gap-2.5 md:gap-3 group active:scale-95 transition-transform"
