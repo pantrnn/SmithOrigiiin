@@ -1,5 +1,5 @@
 
-import { cleanupExpiredRateLimits } from '../middleware/rateLimiter';
+import { cleanupExpiredRateLimits } from '../middleware/ratelimiter';
 
 // Jalankan cleanup setiap 1 jam
 export function startRateLimitCleanupJob() {

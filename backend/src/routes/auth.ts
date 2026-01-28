@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { AuthService } from '../services/authService';
 import { authMiddleware } from '../middleware/auth';
 import { verifyTurnstile } from '../middleware/turnstile';
-import { rateLimiter } from '../middleware/rateLimiter'; // Import rate limiter
+import { rateLimiter } from '../middleware/ratelimiter'; // Import rate limiter
 import { prisma } from '../lib/prisma';
 import bcrypt from 'bcrypt';
 
