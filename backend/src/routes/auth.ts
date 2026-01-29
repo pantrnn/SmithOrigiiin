@@ -8,20 +8,12 @@ import bcrypt from 'bcrypt';
 
 const router = Router();
 
-// Rate limiting untuk register: 2x per 24 jam per IP
+// Rate limiting HANYA untuk register: 2x per 24 jam per IP
 const registerRateLimit = rateLimiter({
   action: 'register',
   maxAttempts: 2,
   windowMs: 24 * 60 * 60 * 1000, // 24 jam
-  message: 'Anda telah mencapai batas registrasi Silakan coba lagi besok.',
-});
-
-// Rate limiting untuk login: 10x per jam per IP (opsional)
-const loginRateLimit = rateLimiter({
-  action: 'login',
-  maxAttempts: 10,
-  windowMs: 60 * 60 * 1000, // 1 jam
-  message: 'Terlalu banyak percobaan login. Silakan coba lagi dalam beberapa menit.',
+  message: 'Anda telah mencapai batas registrasi. Silakan coba lagi besok.',
 });
 
 // Register dengan Rate Limiting + Turnstile
@@ -62,8 +54,8 @@ router.post('/register-admin', async (req: Request, res: Response) => {
   }
 });
 
-// Login dengan Rate Limiting + Turnstile
-router.post('/login', loginRateLimit, verifyTurnstile, async (req: Request, res: Response) => {
+// Login dengan Turnstile (TANPA Rate Limiting)
+router.post('/login', verifyTurnstile, async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
 

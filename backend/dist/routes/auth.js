@@ -6,10 +6,20 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const authService_1 = require("../services/authService");
 const auth_1 = require("../middleware/auth");
+const turnstile_1 = require("../middleware/turnstile");
+const ratelimiter_1 = require("../middleware/ratelimiter"); // Import rate limiter
 const prisma_1 = require("../lib/prisma");
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const router = (0, express_1.Router)();
-router.post('/register', async (req, res) => {
+// Rate limiting HANYA untuk register: 2x per 24 jam per IP
+const registerRateLimit = (0, ratelimiter_1.rateLimiter)({
+    action: 'register',
+    maxAttempts: 2,
+    windowMs: 24 * 60 * 60 * 1000, // 24 jam
+    message: 'Anda telah mencapai batas registrasi. Silakan coba lagi besok.',
+});
+// Register dengan Rate Limiting + Turnstile
+router.post('/register', registerRateLimit, turnstile_1.verifyTurnstile, async (req, res) => {
     try {
         const { username, email, password } = req.body;
         if (!username || !email || !password) {
@@ -25,6 +35,7 @@ router.post('/register', async (req, res) => {
         res.status(400).json({ message: error.message });
     }
 });
+// Register admin tanpa rate limiting (internal use)
 router.post('/register-admin', async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -41,7 +52,8 @@ router.post('/register-admin', async (req, res) => {
         res.status(400).json({ message: error.message });
     }
 });
-router.post('/login', async (req, res) => {
+// Login dengan Turnstile (TANPA Rate Limiting)
+router.post('/login', turnstile_1.verifyTurnstile, async (req, res) => {
     try {
         const { username, password } = req.body;
         if (!username || !password) {

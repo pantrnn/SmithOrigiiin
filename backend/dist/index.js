@@ -15,6 +15,7 @@ const product_1 = __importDefault(require("./routes/product"));
 const variant_1 = __importDefault(require("./routes/variant"));
 const favorite_1 = __importDefault(require("./routes/favorite"));
 const category_1 = __importDefault(require("./routes/category"));
+const cleanupRateLimits_1 = require("./jobs/cleanupRateLimits");
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)({
     origin: 'http://localhost:3000',
@@ -35,6 +36,8 @@ app.use('/uploads', express_1.default.static('public/uploads'));
 app.get('/api/health', (req, res) => {
     res.status(200).json({ message: 'Server is running' });
 });
+// 🔥 START RATE LIMIT CLEANUP JOB
+(0, cleanupRateLimits_1.startRateLimitCleanupJob)();
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
     console.log(`Server berjalan di port ${PORT}`);

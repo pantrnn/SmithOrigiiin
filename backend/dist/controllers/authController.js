@@ -11,6 +11,7 @@ class AuthController {
                     message: 'Username, email, dan password harus diisi'
                 });
             }
+            // Turnstile sudah diverifikasi di middleware
             const result = await authService_1.AuthService.register(username, email, password);
             res.status(201).json({
                 message: 'Registrasi berhasil',
@@ -53,6 +54,7 @@ class AuthController {
                     message: 'Username dan password harus diisi'
                 });
             }
+            // Turnstile sudah diverifikasi di middleware
             const result = await authService_1.AuthService.login(username, password);
             res.status(200).json({
                 message: 'Login berhasil',
